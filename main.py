@@ -1,12 +1,15 @@
 import open3d as o3d
 import numpy as np
+from scipy.sparse.csgraph import laplacian as cs_laplacian
+from scipy import sparse
 from utils.pre_processing import ransac_registration
 
-randomArr = np.random.rand(30000, 3)
+adj_matrix = np.array([[0, 4], [4, 0]])
 
-pcd = o3d.geometry.PointCloud()
-pcd.points = o3d.utility.Vector3dVector(randomArr)
+d = np.array([[0.5, 0], [0, 0.5]])
+print(d*adj_matrix)
+# adj_matrix = sparse.csr_matrix(adj_matrix)
 
-randomArr = ransac_registration(randomArr, randomArr, 0.001)
-
+laplacian = cs_laplacian(adj_matrix, normed=True)
+print(laplacian)
 
