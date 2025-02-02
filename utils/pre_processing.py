@@ -2,6 +2,8 @@ import copy
 import numpy as np
 import open3d as o3d
 import scipy.sparse as sp
+import faulthandler
+faulthandler.enable()
 
 
 def preprocess(
@@ -16,15 +18,12 @@ def preprocess(
     """
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(pc)
-
     # print(":: Downsample with a voxel size %.3f." % voxel_size)
     pcd_down = pcd.voxel_down_sample(voxel_size)
-
     radius_normal = voxel_size * 2
     # print(":: Estimate normal with search radius %.3f." % radius_normal)
     pcd_down.estimate_normals(
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
-
     radius_feature = voxel_size * 5
     # print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
     pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
@@ -37,7 +36,7 @@ def ransac_registration(
         target: np.array,
         source,
         verbose=True,
-        voxel_size=0.001
+        voxel_size=10
 ):
     """
     Global registration of the full bones, this is done to have a rough initialization for the complete or
@@ -68,9 +67,12 @@ def ransac_registration(
 
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(source)
-    return np.asarray(
-        copy.deepcopy(pcd).transform(res.transformation).points
-    )
+    trans_pcd = copy.deepcopy(pcd)
+    trans_pcd = trans_pcd.transform(res.transformation)
+    # return np.asarray(
+    #     copy.deepcopy(pcd).transform(res.transformation).points
+    # )
+    return np.asarray(trans_pcd.points)
 
 
 def largest_connected_component(

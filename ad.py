@@ -13,7 +13,7 @@ from sklearn.metrics.pairwise import cosine_distances
 from manifold.coupling import couple_adjacency_matrices
 from manifold.spectral_embedding import spectral_embedding
 from scipy.sparse.csgraph import laplacian as csgraph_laplacian
-from utils.pre_processing import largest_connected_component, ransac_registration
+from utils.pre_processing import largest_connected_component, ransac_registration, preprocess
 
 _SEED = 42
 np.random.seed = _SEED
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--cross', type=float, default=1,
                         help='Fraction of source nodes used for coupled graph building')
-    parser.add_argument('-m', '--maps', type=int, default=200,
+    parser.add_argument('-m', '--maps', type=int, default=100,
                         help='Number of coupled maps')
     parser.add_argument('-p', '--points', type=int, default=13000,
                         help='Number of points to subsample for matching')
@@ -36,7 +36,7 @@ if __name__ == "__main__":
                         help='Downsampling to speed-up CPD')
     parser.add_argument('-s', '--source', type=str, default='./data/cable_gland/train/good/xyz/000.tiff',
                         help='path to source shape')
-    parser.add_argument('-t', '--target', type=str, default='./data/cable_gland/test/cut/xyz/005.tiff',
+    parser.add_argument('-t', '--target', type=str, default='./data/cable_gland/test/bent/xyz/003.tiff',
                         help='path to target shape')
     args = parser.parse_args()
 
@@ -52,7 +52,10 @@ if __name__ == "__main__":
         n_points=args.points,
         threshold=args.threshold
     )
-    # print("loaded source and target")
+
+    source = source.astype("float64")
+    target = target.astype("float64")
+
     adjacency_source = adjacency_matrix(source, mode="gaussian", method="knn")
     adjacency_target = adjacency_matrix(target, mode="gaussian", method="knn")
     source = largest_connected_component(source, adj=adjacency_source, num_components=1)
@@ -61,7 +64,6 @@ if __name__ == "__main__":
     # print("loaded source and target adjacency matrices")
     # We do first RANSAC registration and then Affine CPD since the latter may fail if point clouds
     # are initially very far
-    """ Problem with RANSAC registration"""
     source = ransac_registration(
         source=source,
         target=target,
@@ -117,7 +119,7 @@ if __name__ == "__main__":
     coupled_embeddings = spectral_embedding(
         adjacency=adjacency_coupled,
         n_components=args.maps,
-        eigen_solver='lobpcg',
+        eigen_solver='amg',
         random_state=_SEED,
         eigen_tol='auto',
         norm_laplacian=False,

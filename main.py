@@ -1,16 +1,12 @@
-# This is a sample Python script.
+import open3d as o3d
+import numpy as np
+from utils.pre_processing import ransac_registration
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+randomArr = np.random.rand(30000, 3)
+
+pcd = o3d.geometry.PointCloud()
+pcd.points = o3d.utility.Vector3dVector(randomArr)
+
+randomArr = ransac_registration(randomArr, randomArr, 0.001)
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
