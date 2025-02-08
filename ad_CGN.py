@@ -20,6 +20,8 @@ _SEED = 42
 np.random.seed = _SEED
 random.seed = _SEED
 
+ReluActivation = lambda x: max(0, x)
+ReluActivation = np.vectorize(ReluActivation)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -35,9 +37,9 @@ if __name__ == "__main__":
                         help='Downsampling to speed-up CPD')
     parser.add_argument('-s', '--source', type=str, default='./data/cable_gland/train/good/xyz/000.tiff',
                         help='path to source shape')
-    parser.add_argument('-t', '--target', type=str, default='./data/cable_gland/test/bent/xyz/020.tiff',
+    parser.add_argument('-t', '--target', type=str, default='./data/cable_gland/test/bent/xyz/005.tiff',
                         help='path to target shape')
-    parser.add_argument('-k', '--k', type=int, default=1,
+    parser.add_argument('-k', '--k', type=int, default=5,
                         help='iterations of the Simple Graph Convolution')
     args = parser.parse_args()
 
@@ -122,6 +124,7 @@ if __name__ == "__main__":
         coupled_s = np.identity((coupled_laplacian.shape)[0]) - coupled_laplacian
         coupled_maps = np.vstack((source, target))
         coupled_embeddings = coupled_s * coupled_maps
+        coupled_embeddings = ReluActivation(coupled_embeddings)
         # Split them
         source_embeddings = coupled_embeddings[:len(source)]
         target_embeddings = coupled_embeddings[len(source):]
