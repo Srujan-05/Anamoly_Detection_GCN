@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import scipy.sparse as sp
 
@@ -9,15 +11,16 @@ from scipy.sparse.csgraph import laplacian as csgraph_laplacian
 from utils.pre_processing import ransac_registration
 from manifold.coupling import couple_adjacency_matrices
 from manifold.spectral_embedding import spectral_embedding
-from manifold.utils import adjacency_matrix, compare_signatures
-
+from manifold.utils import adjacency_matrix
 _METHODS = [
     'spectral',
-    'Euclidean',
-    'GPS',
-    'Hist',
+    'SGN',  # Simple Graph Convolution Network
+    'GCN'  # Graph Convolution Network
 ]
 _SEED = 42
+
+ReluActivation = lambda x: max(0, x)
+ReluActivation = np.vectorize(ReluActivation)
 
 
 class AnomalyDetection:
@@ -30,6 +33,7 @@ class AnomalyDetection:
             maps: int = 200,
             cpd_down: int = 3000,
             bins: int = 200,
+            k: int = 1
     ):
         self.source = source
         if method not in _METHODS:
@@ -40,6 +44,7 @@ class AnomalyDetection:
         self.maps = maps
         self.cpd_down = cpd_down
         self.bins = bins
+        self.k = k
 
     def predict(
             self,
@@ -47,8 +52,10 @@ class AnomalyDetection:
     ):
         # We do first RANSAC registration and then Affine CPD since the latter may fail if point clouds
         # are initially very far
+        source = self.source.astype('float64')
+        target = target.astype("float64")
         source = ransac_registration(
-            source=self.source,
+            source=source,
             target=target,
             voxel_size=self.voxel_size,
             verbose=False
@@ -79,12 +86,11 @@ class AnomalyDetection:
         # Now do the prediction with the desired method
         if self.method == "spectral":
             pred = self._predict_spectral(source, target, cross_source, cross_target, dist)
-        elif self.method == "Euclidean":
-            pred = self._predict_euclidean(source, target, cross_source, cross_target)
-        elif self.method == "GPS":
-            pred = self._predict_gps(source, target, cross_source, cross_target)
-        elif self.method == "Hist":
-            pred = self._predict_hist(source, target, cross_source, cross_target)
+        elif self.method == "SGN":
+            pred = self._predict_sgn(source, target, cross_source, cross_target)
+        else:
+            pred = self._predict_cgn(source, target, cross_source, cross_target)
+
         # We need to return the cross_target points since they might be needed to
         # create the prediction image
         return pred, cross_target.reshape(-1)
@@ -140,105 +146,119 @@ class AnomalyDetection:
         p2p_dist = cosine_distances(source_subemb, target_subemb).diagonal()
         return p2p_dist
 
-    def _predict_euclidean(
+    def _predict_sgn(
             self,
             source,
             target,
             cross_source,
             cross_target,
     ):
-        kdtree = KDTree(source[cross_source.reshape(-1)])
-        p2p_dist, _ = kdtree.query(target[cross_target])
-        p2p_dist /= np.max(p2p_dist)
+        source_subem = copy.deepcopy(source)
+        target_subem = copy.deepcopy(target)
+        for i in range(self.k):
+            adjacency_source = adjacency_matrix(source_subem, mode="gaussian", method="knn")
+            _, dd_source = csgraph_laplacian(
+                adjacency_source, normed=False, return_diag=True
+            )
+            adjacency_target = adjacency_matrix(target_subem, mode="gaussian", method="knn")
+            _, dd_target = csgraph_laplacian(
+                adjacency_target, normed=False, return_diag=True
+            )
+            # Stochastically select target points for cross connections
+            n_cross = int(self.cross * len(target))
+            cross_target = np.random.choice(
+                range(len(target)),
+                size=n_cross,
+                replace=False
+            )
+            # if l=0, we need empty lists to not have errors later
+            if n_cross > 0:
+                cross_kdtree = KDTree(source)
+                dist, cross_source = cross_kdtree.query(target[cross_target])
+                dist = np.exp(-dist ** 2 / np.max(dist) ** 2)
+            else:
+                dist = np.array([])
+                cross_source = np.array([])
+            print("Coupling graphs ...")
+            print(":: Number of cross connections", n_cross)
+            # Compute coupled adjacency
+            adjacency_coupled = couple_adjacency_matrices(
+                adjacency_a=adjacency_source + np.identity(adjacency_source.shape[0]),
+                adjacency_b=adjacency_target + np.identity(adjacency_target.shape[0]),
+                inds_a=cross_source.reshape(-1),
+                inds_b=cross_target.reshape(-1),
+                dist=sp.diags(dist.reshape(-1)),
+                return_uncoupled=False
+            )
+            coupled_laplacian = csgraph_laplacian(adjacency_coupled, normed=True)
+            coupled_s = np.identity((coupled_laplacian.shape)[0]) - coupled_laplacian
+            coupled_maps = np.vstack((source, target))
+            coupled_embeddings = coupled_s * coupled_maps
+            # Split them
+            source_embeddings = coupled_embeddings[:len(source)]
+            target_embeddings = coupled_embeddings[len(source):]
+            # Embedding restriceted to cross nodes
+            source_subemb = source_embeddings[cross_source.reshape(-1), :]
+            target_subemb = target_embeddings[cross_target.reshape(-1), :]
+        # point to point distance
+        p2p_dist = cosine_distances(np.asarray(source_subemb), np.asarray(target_subemb)).diagonal()
         return p2p_dist
 
-    def _predict_gps(
+    def _predict_cgn(
             self,
             source,
             target,
             cross_source,
             cross_target,
     ):
-        # Re-compute adjacencies and degree matrices because they may have changed with pre-processing
-        adjacency_source = adjacency_matrix(source, mode="gaussian", method="knn")
-        _, dd_source = csgraph_laplacian(
-            adjacency_source, normed=False, return_diag=True
-        )
-        adjacency_target = adjacency_matrix(target, mode="gaussian", method="knn")
-        _, dd_target = csgraph_laplacian(
-            adjacency_target, normed=False, return_diag=True
-        )
-        source_embeddings = spectral_embedding(
-            adjacency=adjacency_source,
-            n_components=self.maps,
-            eigen_solver='amg',
-            random_state=_SEED,
-            eigen_tol='auto',
-            norm_laplacian=False,
-            drop_first=True,
-            B=sp.diags(dd_source)
-        )
-        target_embeddings = spectral_embedding(
-            adjacency=adjacency_target,
-            n_components=self.maps,
-            eigen_solver='amg',
-            random_state=_SEED,
-            eigen_tol='auto',
-            norm_laplacian=False,
-            drop_first=True,
-            B=sp.diags(dd_target)
-        )
-        # Embedding rsitriced to cross nodes
-        source_subemb = source_embeddings[cross_source.reshape(-1), :]
-        target_subemb = target_embeddings[cross_target.reshape(-1), :]
+        source_subem = copy.deepcopy(source)
+        target_subem = copy.deepcopy(target)
+        for i in range(self.k):
+            adjacency_source = adjacency_matrix(source_subem, mode="gaussian", method="knn")
+            _, dd_source = csgraph_laplacian(
+                adjacency_source, normed=False, return_diag=True
+            )
+            adjacency_target = adjacency_matrix(target_subem, mode="gaussian", method="knn")
+            _, dd_target = csgraph_laplacian(
+                adjacency_target, normed=False, return_diag=True
+            )
+            # Stochastically select target points for cross connections
+            n_cross = int(self.cross * len(target))
+            cross_target = np.random.choice(
+                range(len(target)),
+                size=n_cross,
+                replace=False
+            )
+            # if l=0, we need empty lists to not have errors later
+            if n_cross > 0:
+                cross_kdtree = KDTree(source)
+                dist, cross_source = cross_kdtree.query(target[cross_target])
+                dist = np.exp(-dist ** 2 / np.max(dist) ** 2)
+            else:
+                dist = np.array([])
+                cross_source = np.array([])
+            print("Coupling graphs ...")
+            print(":: Number of cross connections", n_cross)
+            # Compute coupled adjacency
+            adjacency_coupled = couple_adjacency_matrices(
+                adjacency_a=adjacency_source + np.identity(adjacency_source.shape[0]),
+                adjacency_b=adjacency_target + np.identity(adjacency_target.shape[0]),
+                inds_a=cross_source.reshape(-1),
+                inds_b=cross_target.reshape(-1),
+                dist=sp.diags(dist.reshape(-1)),
+                return_uncoupled=False
+            )
+            coupled_laplacian = csgraph_laplacian(adjacency_coupled, normed=True)
+            coupled_s = np.identity((coupled_laplacian.shape)[0]) - coupled_laplacian
+            coupled_maps = np.vstack((source, target))
+            coupled_embeddings = coupled_s * coupled_maps
+            coupled_embeddings = ReluActivation(coupled_embeddings)
+            # Split them
+            source_embeddings = coupled_embeddings[:len(source)]
+            target_embeddings = coupled_embeddings[len(source):]
+            # Embedding restriceted to cross nodes
+            source_subemb = source_embeddings[cross_source.reshape(-1), :]
+            target_subemb = target_embeddings[cross_target.reshape(-1), :]
         # point to point distance
-        p2p_dist = cosine_distances(source_subemb, target_subemb).diagonal()
-        return p2p_dist
-
-    def _predict_hist(
-            self,
-            source,
-            target,
-            cross_source,
-            cross_target,
-    ):
-        adjacency_source = adjacency_matrix(source, mode="gaussian", method="knn")
-        _, dd_source = csgraph_laplacian(
-            adjacency_source, normed=False, return_diag=True
-        )
-        adjacency_target = adjacency_matrix(target, mode="gaussian", method="knn")
-        _, dd_target = csgraph_laplacian(
-            adjacency_target, normed=False, return_diag=True
-        )
-        source_embeddings = spectral_embedding(
-            adjacency=adjacency_source,
-            n_components=self.maps,
-            eigen_solver='amg',
-            random_state=_SEED,
-            eigen_tol='auto',
-            norm_laplacian=False,
-            drop_first=True,
-            B=sp.diags(dd_source)
-        )
-        target_embeddings = spectral_embedding(
-            adjacency=adjacency_target,
-            n_components=self.maps,
-            eigen_solver='amg',
-            random_state=_SEED,
-            eigen_tol='auto',
-            norm_laplacian=False,
-            drop_first=True,
-            B=sp.diags(dd_target)
-        )
-        target_embeddings_aligned = compare_signatures(
-            source_embeddings,
-            target_embeddings,
-            self.bins
-        )
-        # Embedding rsitriced to cross nodes
-        source_subemb = source_embeddings[cross_source.reshape(-1), :]
-        target_subemb = target_embeddings_aligned[cross_target.reshape(-1), :]
-
-        # point to point distance
-        p2p_dist = cosine_distances(source_subemb, target_subemb).diagonal()
+        p2p_dist = cosine_distances(np.asarray(source_subemb), np.asarray(target_subemb)).diagonal()
         return p2p_dist

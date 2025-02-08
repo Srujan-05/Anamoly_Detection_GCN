@@ -5,10 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="924a4b29-ef3b-4bb1-96da-3b16dcf1ea72" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/ad_CGN.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/AnamolyDetection Graph Convolution.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Anamoly Detection Graph Convolution.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ad_CGN.py" beforeDir="false" afterPath="$PROJECT_DIR$/ad_CGN.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ad_SGN.py" beforeDir="false" afterPath="$PROJECT_DIR$/ad_SGN.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -58,7 +56,7 @@
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.ad_CGN">
+  <component name="RunManager" selected="Python.ad_SGN">
     <configuration name="ad" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Anamoly Detection Graph Convolution" />
       <option name="ENV_FILES" value="" />
@@ -171,8 +169,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.ad_CGN" />
         <item itemvalue="Python.ad_SGN" />
+        <item itemvalue="Python.ad_CGN" />
         <item itemvalue="Python.ad" />
         <item itemvalue="Python.pre_processing" />
       </list>
