@@ -179,8 +179,8 @@ class AnomalyDetection:
             else:
                 dist = np.array([])
                 cross_source = np.array([])
-            print("Coupling graphs ...")
-            print(":: Number of cross connections", n_cross)
+            # print("Coupling graphs ...")
+            # print(":: Number of cross connections", n_cross)
             # Compute coupled adjacency
             adjacency_coupled = couple_adjacency_matrices(
                 adjacency_a=adjacency_source + np.identity(adjacency_source.shape[0]),
@@ -237,8 +237,8 @@ class AnomalyDetection:
             else:
                 dist = np.array([])
                 cross_source = np.array([])
-            print("Coupling graphs ...")
-            print(":: Number of cross connections", n_cross)
+            # print("Coupling graphs ...")
+            # print(":: Number of cross connections", n_cross)
             # Compute coupled adjacency
             adjacency_coupled = couple_adjacency_matrices(
                 adjacency_a=adjacency_source + np.identity(adjacency_source.shape[0]),

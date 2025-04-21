@@ -25,7 +25,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--cross', type=float, default=1,
                         help='Fraction of source nodes used for coupled graph building')
-    parser.add_argument('-p', '--points', type=int, default=25000,
+    parser.add_argument('-p', '--points', type=int, default=13000,
                         help='Number of points to subsample for matching')
     parser.add_argument('-th', '--threshold', type=float, default=0.001,
                         help='Threshold for plane removal')
@@ -35,9 +35,9 @@ if __name__ == "__main__":
                         help='Downsampling to speed-up CPD')
     parser.add_argument('-s', '--source', type=str, default='./data/cable_gland/train/good/xyz/000.tiff',
                         help='path to source shape')
-    parser.add_argument('-t', '--target', type=str, default='./data/cable_gland/test/bent/xyz/020.tiff',
+    parser.add_argument('-t', '--target', type=str, default='./data/cable_gland/test/bent/xyz/007.tiff',
                         help='path to target shape')
-    parser.add_argument('-k', '--k', type=int, default=1,
+    parser.add_argument('-k', '--k', type=int, default=2,
                         help='iterations of the Simple Graph Convolution')
     args = parser.parse_args()
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         target_subemb = target_embeddings[cross_target.reshape(-1), :]
     # point to point distance
     p2p_dist = cosine_distances(np.asarray(source_subemb), np.asarray(target_subemb)).diagonal()
-    mean_dist = np.mean(p2p_dist-min(p2p_dist))
+    mean_dist = np.mean(p2p_dist)
     anomaly_percent = len(p2p_dist[p2p_dist > mean_dist])/len(p2p_dist)
     print("Percentage Anamoly {}".format(anomaly_percent*100))
     print("Anomaly localization performed in ", time.time()-start, "seconds.")
