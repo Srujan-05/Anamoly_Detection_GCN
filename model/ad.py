@@ -87,13 +87,13 @@ class AnomalyDetection:
         if self.method == "spectral":
             pred = self._predict_spectral(source, target, cross_source, cross_target, dist)
         elif self.method == "SGN":
-            pred = self._predict_sgn(source, target, cross_source, cross_target)
+            pred, mean = self._predict_sgn(source, target, cross_source, cross_target)
         else:
-            pred = self._predict_cgn(source, target, cross_source, cross_target)
+            pred, mean = self._predict_cgn(source, target, cross_source, cross_target)
 
         # We need to return the cross_target points since they might be needed to
         # create the prediction image
-        return pred, cross_target.reshape(-1)
+        return pred, cross_target.reshape(-1), mean
 
     def _predict_spectral(
             self,
@@ -144,7 +144,7 @@ class AnomalyDetection:
         target_subemb = target_embeddings[cross_target.reshape(-1), :]
         # point to point distance
         p2p_dist = cosine_distances(source_subemb, target_subemb).diagonal()
-        return p2p_dist
+        return p2p_dist, None
 
     def _predict_sgn(
             self,
@@ -202,7 +202,12 @@ class AnomalyDetection:
             target_subemb = target_embeddings[cross_target.reshape(-1), :]
         # point to point distance
         p2p_dist = cosine_distances(np.asarray(source_subemb), np.asarray(target_subemb)).diagonal()
-        return p2p_dist
+        mean_dist = np.mean(p2p_dist)
+        # centroid_source = np.median(source_subem, axis=0)
+        # centroid_target = np.median(target_subem, axis=0)
+        # mean_dist = cosine_distances(np.asarray(centroid_source).reshape(1, -1), np.asarray(centroid_target).reshape(1, -1))
+        # mean_dist = mean_dist[0, 0]
+        return p2p_dist, mean_dist
 
     def _predict_cgn(
             self,
@@ -261,4 +266,9 @@ class AnomalyDetection:
             target_subemb = target_embeddings[cross_target.reshape(-1), :]
         # point to point distance
         p2p_dist = cosine_distances(np.asarray(source_subemb), np.asarray(target_subemb)).diagonal()
-        return p2p_dist
+        mean_dist = np.mean(p2p_dist)
+        # centroid_source = np.median(source_subem, axis=0)
+        # centroid_target = np.median(target_subem, axis=0)
+        # mean_dist = cosine_distances(np.asarray(centroid_source).reshape(1, -1), np.asarray(centroid_target).reshape(1, -1))
+        # mean_dist = mean_dist[0, 0]
+        return p2p_dist, mean_dist

@@ -5,9 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="924a4b29-ef3b-4bb1-96da-3b16dcf1ea72" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/results/results_SGN_2_iters_3.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ad_CGN.py" beforeDir="false" afterPath="$PROJECT_DIR$/ad_CGN.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ad_SGN.py" beforeDir="false" afterPath="$PROJECT_DIR$/ad_SGN.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/benchmark_ad.py" beforeDir="false" afterPath="$PROJECT_DIR$/benchmark_ad.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model/ad.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/ad.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plotingResults.py" beforeDir="false" afterPath="$PROJECT_DIR$/results/plotingResults.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/results,py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/results.txt" beforeDir="false" afterPath="$PROJECT_DIR$/results/results.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/results_GCN_2_iters.txt" beforeDir="false" afterPath="$PROJECT_DIR$/results/results_GCN_2_iters.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/results_SGN_2_iters_2.txt" beforeDir="false" afterPath="$PROJECT_DIR$/results/results_SGN_2_iters_2.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/results_spectral_2_iters.txt" beforeDir="false" afterPath="$PROJECT_DIR$/results/results_spectral_2_iters.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,10 +48,13 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
     &quot;Python.ad.executor&quot;: &quot;Run&quot;,
     &quot;Python.ad_CGN.executor&quot;: &quot;Run&quot;,
     &quot;Python.ad_SGN.executor&quot;: &quot;Run&quot;,
+    &quot;Python.benchmark_ad.executor&quot;: &quot;Run&quot;,
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.plotingResults.executor&quot;: &quot;Run&quot;,
     &quot;Python.pre_processing.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
@@ -123,6 +134,28 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="benchmark_ad" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Anamoly Detection Graph Convolution" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/benchmark_ad.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
       <module name="Anamoly Detection Graph Convolution" />
       <option name="ENV_FILES" value="" />
@@ -145,7 +178,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="pre_processing" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="plotingResults" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Anamoly Detection Graph Convolution" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -154,11 +187,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/utils" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/results" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils/pre_processing.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/results/plotingResults.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -170,9 +203,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.ad_SGN" />
+        <item itemvalue="Python.plotingResults" />
+        <item itemvalue="Python.benchmark_ad" />
         <item itemvalue="Python.ad_CGN" />
         <item itemvalue="Python.ad" />
-        <item itemvalue="Python.pre_processing" />
       </list>
     </recent_temporary>
   </component>
@@ -193,5 +227,8 @@
       <updated>1738407037357</updated>
     </task>
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
   </component>
 </project>

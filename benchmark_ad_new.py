@@ -35,7 +35,7 @@ if __name__ == "__main__":
                         help='RANSAC voxel size')
     parser.add_argument('-cls', '--cls', type=str, default='cable_gland',
                         help='Folder containing samples')
-    parser.add_argument('-s', '--source', type=str, default='./data/cable_gland/train/good/xyz/000.tiff',
+    parser.add_argument('-s', '--sources', type=str, default='./data/cable_gland/test/good/xyz',
                         help='Rigid registration type')
     parser.add_argument('-d', '--dataset_dir', type=str, default='data/',
                         help='Rigid registration type')
@@ -51,33 +51,38 @@ if __name__ == "__main__":
 
     cls = args.cls
     path = os.path.join(args.dataset_dir, cls)
-    source_path = args.source
+    source_paths = args.sources
 
     # Load source point clouds
-    source, source_pca, source_sampling = load_tiff_pc(
-        source_path,
-        n_points=args.points,
-        threshold=args.threshold
-    )
-    # Keep the largest connected components (sometimes background disconnected components may be present)
-    adjacency_source = adjacency_matrix(source, mode="gaussian", method="knn")
-    source = largest_connected_component(source, adj=adjacency_source, num_components=1)
-    # Create the AnomalyDetection object
-    ad = AnomalyDetection(
-        source=source,
-        method=args.method,
-        voxel_size=args.voxel_size,
-        cross=args.cross,
-        maps=args.maps,
-        cpd_down=args.cpd_down,
-        bins=args.bins,
-        k=args.k
-    )
+    models = []
+    sources = os.listdir(source_paths)
+    for source in sources:
+        print(source)
+        source_path = os.path.join(source_paths, '000.tiff')
+        source, source_pca, source_sampling = load_tiff_pc(
+            source_path,
+            n_points=args.points,
+            threshold=args.threshold
+        )
+        # Keep the largest connected components (sometimes background disconnected components may be present)
+        adjacency_source = adjacency_matrix(source, mode="gaussian", method="knn")
+        source = largest_connected_component(source, adj=adjacency_source, num_components=1)
+        # Create the AnomalyDetection object
+        ad = AnomalyDetection(
+            source=source,
+            method=args.method,
+            voxel_size=args.voxel_size,
+            cross=args.cross,
+            maps=args.maps,
+            cpd_down=args.cpd_down,
+            bins=args.bins,
+            k=args.k
+        )
+        models.append(ad)
     # List of tasks in the test folder (anomalies list)
-    tasks = os.listdir(
-        os.path.join(path, 'test')
-    )
-    predicted = []
+    tasks = os.listdir(os.path.join(path, 'test'))
+    threshold = 8
+    predicted = {}
     true_value = []
     result = {}
     print(tasks)
@@ -87,6 +92,11 @@ if __name__ == "__main__":
         target_ids = os.listdir(os.path.join(path, 'test', task, 'xyz'))
         # Iterate over test saples -> targets
         for target_id in target_ids:
+            predicted[os.path.join(task, target_id)] = []
+            if task == 'good':
+                true_value.append(0)
+            else:
+                true_value.append(1)
             print(task, target_id)
             # Do matching and obtain score
             target, target_pca, target_sampling = load_tiff_pc(
@@ -98,22 +108,22 @@ if __name__ == "__main__":
             adjacency_target = adjacency_matrix(target, mode="gaussian", method="knn")
             target = largest_connected_component(target, adj=adjacency_target, num_components=1)
             # Predict anomalies
-            p2p_dist, cross_target, mean_dist = ad.predict(target)
-            anomaly_percent = (len(p2p_dist[p2p_dist > mean_dist]) / len(p2p_dist)) * 100
-            print("Anomaly Percent: {}".format(anomaly_percent))
-            result[os.path.join(path, 'test', task, 'xyz', target_id)] = anomaly_percent
-            if task == "good":
-                true_value.append(0)
-                if anomaly_percent < 8:
-                    predicted.append(0)
+            for model in models:
+                p2p_dist, cross_target, mean_dist = model.predict(target)
+                # print(p2p_dist, mean_dist)
+                anomaly_percent = (len(p2p_dist[p2p_dist > mean_dist]) / len(p2p_dist)) * 100
+                print("Anomaly Percent: {}".format(anomaly_percent))
+                result[os.path.join(path, 'test', task, 'xyz', target_id)] = anomaly_percent
+                if task == "good":
+                    if anomaly_percent < threshold:
+                        predicted[os.path.join(task, target_id)].append(0)
+                    else:
+                        predicted[os.path.join(task, target_id)].append(1)
                 else:
-                    predicted.append(1)
-            else:
-                true_value.append(1)
-                if anomaly_percent < 8:
-                    predicted.append(0)
-                else:
-                    predicted.append(1)
+                    if anomaly_percent < threshold:
+                        predicted[os.path.join(task, target_id)].append(0)
+                    else:
+                        predicted[os.path.join(task, target_id)].append(1)
             # Save prediction .tiff file to compare with gt
             # Here we have to find back the cross_target point in the original image
             # and then perform the closing (or dilation)
@@ -139,12 +149,21 @@ if __name__ == "__main__":
             #     os.makedirs(os.path.join(args.output_dir, args.cls, 'test', task))
             # im.save(os.path.join(args.output_dir, args.cls, 'test', task, target_id))
 
-    predicted = np.array(predicted)
+    print(predicted)
+    print(true_value)
+    preds = []
+    for pred in predicted:
+        lis = predicted[pred]
+        if lis.count(0) > len(lis)/2:
+            preds.append(0)
+        else:
+            preds.append(1)
+    preds = np.array(preds)
     true_value = np.array(true_value)
-    accuracy = (len(predicted[predicted==true_value]) / len(true_value)) * 100
-    with open(args.output_dir, 'a') as file:
-        for res in result:
-            file.write(str(res) + " is " + str(result[res]) + " percent anomalous.\n")
-        file.write("Model:{} accuracy is {}".format(args.method, accuracy))
-        file.close()
+    accuracy = (len(preds[preds==true_value]) / len(true_value)) * 100
+    # with open(args.output_dir, 'a') as file:
+    #     for res in result:
+    #         file.write(str(res) + " is " + str(result[res]) + " percent anomalous.\n")
+    #     file.write("Model:{} accuracy is {}".format(args.method, accuracy))
+    #     file.close()
     print("Model accuracy is {}".format(accuracy))

@@ -35,7 +35,7 @@ if __name__ == "__main__":
                         help='Downsampling to speed-up CPD')
     parser.add_argument('-s', '--source', type=str, default='./data/cable_gland/train/good/xyz/000.tiff',
                         help='path to source shape')
-    parser.add_argument('-t', '--target', type=str, default='./data/cable_gland/test/bent/xyz/007.tiff',
+    parser.add_argument('-t', '--target', type=str, default='./data/cable_gland/test/bent/xyz/002.tiff',
                         help='path to target shape')
     parser.add_argument('-k', '--k', type=int, default=2,
                         help='iterations of the Simple Graph Convolution')
@@ -130,8 +130,12 @@ if __name__ == "__main__":
         target_subemb = target_embeddings[cross_target.reshape(-1), :]
     # point to point distance
     p2p_dist = cosine_distances(np.asarray(source_subemb), np.asarray(target_subemb)).diagonal()
-    mean_dist = np.mean(p2p_dist)
-    anomaly_percent = len(p2p_dist[p2p_dist > mean_dist])/len(p2p_dist)
+    # mean_dist = np.mean(p2p_dist)
+    centroid_source = np.median(source_subem, axis=0)
+    centroid_target = np.median(target_subem, axis=0)
+    mean_dist = cosine_distances(np.asarray(centroid_source).reshape(1, -1), np.asarray(centroid_target).reshape(1, -1))
+    print(mean_dist)
+    anomaly_percent = len(p2p_dist[p2p_dist > mean_dist[0]])/len(p2p_dist)
     print("Percentage Anamoly {}".format(anomaly_percent*100))
     print("Anomaly localization performed in ", time.time()-start, "seconds.")
     # Plot predictionR
